@@ -99,6 +99,31 @@ def gitlab_webhook(data, headers):
     return data
 
 
+def alertmanager(data, headers):
+    """Pretty-print a Prometheus Alertmanager notification."""
+    status = data.get("status", "unknown").upper()
+    alerts = data.get("alerts", [])
+    lines = [f"#### [{status}] Alertmanager"]
+    for alert in alerts:
+        name = alert.get("labels", {}).get("alertname", "unknown")
+        summary = alert.get("annotations", {}).get("summary", "")
+        description = alert.get("annotations", {}).get("description", "")
+        severity = alert.get("labels", {}).get("severity", "")
+        namespace = alert.get("labels", {}).get("namespace", "")
+        line = f"* **{name}**"
+        if severity:
+            line += f" ({severity})"
+        if namespace:
+            line += f" in `{namespace}`"
+        if summary:
+            line += f": {summary}"
+        if description:
+            line += f"\n  {description}"
+        lines.append(line)
+    data["body"] = "\n".join(lines)
+    return data
+
+
 def grn(data, headers):
     """Pretty-print a github release notifier (grn) notification."""
     version, title, author, package = (
