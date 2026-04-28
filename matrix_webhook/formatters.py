@@ -101,25 +101,41 @@ def gitlab_webhook(data, headers):
 
 def alertmanager(data, headers):
     """Pretty-print a Prometheus Alertmanager notification."""
-    status = data.get("status", "unknown").upper()
+    status = data.get("status", "resolved")
+    status_icon = "✅" if status == "resolved" else "🔥"
+    severity_icons = {"critical": "🔴", "warning": "🟡", "info": "🔵"}
     alerts = data.get("alerts", [])
-    lines = [f"#### [{status}] Alertmanager"]
+    lines = [f"#### {status_icon} Alertmanager — {status.upper()} ({len(alerts)} alert{'s' if len(alerts) != 1 else ''})"]
     for alert in alerts:
-        name = alert.get("labels", {}).get("alertname", "unknown")
-        summary = alert.get("annotations", {}).get("summary", "")
-        description = alert.get("annotations", {}).get("description", "")
-        severity = alert.get("labels", {}).get("severity", "")
-        namespace = alert.get("labels", {}).get("namespace", "")
-        line = f"* **{name}**"
-        if severity:
-            line += f" ({severity})"
+        labels = alert.get("labels", {})
+        annotations = alert.get("annotations", {})
+        name = labels.get("alertname", "unknown")
+        severity = labels.get("severity", "")
+        namespace = labels.get("namespace", "")
+        pod = labels.get("pod", labels.get("deployment", labels.get("statefulset", "")))
+        summary = annotations.get("summary", "")
+        description = annotations.get("description", "")
+        runbook = annotations.get("runbook_url", "")
+        generator_url = alert.get("generatorURL", "")
+
+        sev_icon = severity_icons.get(severity, "⚪")
+        block = [f"\n---\n**{sev_icon} {name}**"]
         if namespace:
-            line += f" in `{namespace}`"
+            block.append(f"**Namespace:** `{namespace}`")
+        if pod:
+            block.append(f"**Resource:** `{pod}`")
         if summary:
-            line += f": {summary}"
+            block.append(f"**Summary:** {summary}")
         if description:
-            line += f"\n  {description}"
-        lines.append(line)
+            block.append(f"**Details:** {description}")
+        links = []
+        if generator_url:
+            links.append(f"[Read more]({generator_url})")
+        if runbook:
+            links.append(f"[Runbook]({runbook})")
+        if links:
+            block.append(" · ".join(links))
+        lines.append("\n".join(block))
     data["body"] = "\n".join(lines)
     return data
 
