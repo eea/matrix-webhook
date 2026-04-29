@@ -39,6 +39,12 @@ async def matrix_webhook(request):
     if "key" in request.rel_url.query and "key" not in data:
         data["key"] = request.rel_url.query["key"]
 
+    # inject extra query params into data (e.g. cluster=01dev) so formatters can use them
+    reserved = {"key", "room_id", "formatter"}
+    for param, value in request.rel_url.query.items():
+        if param not in reserved and param not in data:
+            data[param] = value
+
     if "formatter" in request.rel_url.query:
         try:
             data = getattr(formatters, request.rel_url.query["formatter"])(

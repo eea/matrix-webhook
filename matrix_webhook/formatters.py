@@ -106,9 +106,9 @@ def alertmanager(data, headers):
     severity_icons = {"critical": "🔴", "warning": "🟡", "info": "🔵"}
     crashloop_names = {"KubePodCrashLooping", "EEAPodCrashLooping", "EEAPodRestartingFrequently"}
     alerts = data.get("alerts", [])
-    cluster = data.get("commonLabels", {}).get("cluster", "")
-    if not cluster:
-        m = re.match(r"https?://[^/]+/k8s/clusters/([^/]+)/", (alerts[0].get("generatorURL", "") if alerts else ""))
+    cluster = data.get("cluster") or data.get("commonLabels", {}).get("cluster", "")
+    if not cluster and alerts:
+        m = re.match(r"https?://[^/]+/k8s/clusters/([^/]+)/", alerts[0].get("generatorURL", ""))
         cluster = m.group(1) if m else ""
     cluster_str = f" | {cluster}" if cluster else ""
     lines = [f"#### {status_icon} Alertmanager — {status.upper()}{cluster_str} ({len(alerts)} alert{'s' if len(alerts) != 1 else ''})"]
