@@ -119,6 +119,17 @@ def alertmanager(data, headers):
         runbook = annotations.get("runbook_url", "")
         generator_url = alert.get("generatorURL", "")
 
+        # Build Rancher2 link to the affected namespace/pod from generatorURL
+        rancher_url = ""
+        if generator_url:
+            m = re.match(r"(https?://[^/]+)/k8s/clusters/([^/]+)/", generator_url)
+            if m:
+                base, cluster_id = m.group(1), m.group(2)
+                if pod and namespace:
+                    rancher_url = f"{base}/dashboard/c/{cluster_id}/explorer/pod/{namespace}/{pod}"
+                elif namespace:
+                    rancher_url = f"{base}/dashboard/c/{cluster_id}/explorer/namespace/{namespace}"
+
         sev_icon = "🔴" if name in crashloop_names else severity_icons.get(severity, "⚪")
         block = [f"\n---\n**{sev_icon} {name}**  "]
         if namespace:
@@ -130,8 +141,8 @@ def alertmanager(data, headers):
         if description:
             block.append(f"**Details:** {description}  ")
         links = []
-        if generator_url:
-            links.append(f"[Read more]({generator_url})")
+        if rancher_url:
+            links.append(f"[Read more]({rancher_url})")
         if runbook:
             links.append(f"[Runbook]({runbook})")
         if links:
