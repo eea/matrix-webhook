@@ -104,6 +104,7 @@ def alertmanager(data, headers):
     status = data.get("status", "resolved")
     status_icon = "✅" if status == "resolved" else "🔥"
     severity_icons = {"critical": "🔴", "warning": "🟡", "info": "🔵"}
+    crashloop_names = {"KubePodCrashLooping", "EEAPodCrashLooping", "EEAPodRestartingFrequently"}
     alerts = data.get("alerts", [])
     lines = [f"#### {status_icon} Alertmanager — {status.upper()} ({len(alerts)} alert{'s' if len(alerts) != 1 else ''})"]
     for alert in alerts:
@@ -118,16 +119,16 @@ def alertmanager(data, headers):
         runbook = annotations.get("runbook_url", "")
         generator_url = alert.get("generatorURL", "")
 
-        sev_icon = severity_icons.get(severity, "⚪")
-        block = [f"\n---\n**{sev_icon} {name}**"]
+        sev_icon = "🔴" if name in crashloop_names else severity_icons.get(severity, "⚪")
+        block = [f"\n---\n**{sev_icon} {name}**  "]
         if namespace:
-            block.append(f"**Namespace:** `{namespace}`")
+            block.append(f"**Namespace:** `{namespace}`  ")
         if pod:
-            block.append(f"**Resource:** `{pod}`")
+            block.append(f"**Resource:** `{pod}`  ")
         if summary:
-            block.append(f"**Summary:** {summary}")
+            block.append(f"**Summary:** {summary}  ")
         if description:
-            block.append(f"**Details:** {description}")
+            block.append(f"**Details:** {description}  ")
         links = []
         if generator_url:
             links.append(f"[Read more]({generator_url})")
