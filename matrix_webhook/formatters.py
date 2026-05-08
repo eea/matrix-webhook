@@ -103,6 +103,7 @@ def alertmanager(data, headers):
     """Pretty-print a Prometheus Alertmanager notification."""
     status = data.get("status", "resolved")
     status_icon = "✅" if status == "resolved" else "🔥"
+    is_resolved = status == "resolved"
     severity_icons = {"critical": "🔴", "warning": "🟡", "info": "🔵"}
     crashloop_names = {"KubePodCrashLooping", "EEAPodCrashLooping", "EEAPodRestartingFrequently"}
     alerts = data.get("alerts", [])
@@ -135,8 +136,13 @@ def alertmanager(data, headers):
                 elif namespace:
                     rancher_url = f"{base}/dashboard/c/{cluster_id}/explorer/namespace/{namespace}"
 
-        sev_icon = "🔴" if name in crashloop_names else severity_icons.get(severity, "⚪")
-        block = [f"\n---\n**{sev_icon} {name}**  "]
+        if is_resolved:
+            alert_prefix = "✅"
+            name_display = f"~~{name}~~"
+        else:
+            alert_prefix = "🔴" if name in crashloop_names else severity_icons.get(severity, "⚪")
+            name_display = name
+        block = [f"\n---\n**{alert_prefix} {name_display}**  "]
         if namespace:
             block.append(f"**Namespace:** `{namespace}`  ")
         if pod:
