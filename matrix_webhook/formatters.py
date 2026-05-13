@@ -138,7 +138,7 @@ def alertmanager(data, headers):
 
         if is_resolved:
             alert_prefix = "✅"
-            name_display = f"~~{name}~~"
+            name_display = f"<del>{name}</del>"
         else:
             alert_prefix = "🔴" if name in crashloop_names else severity_icons.get(severity, "⚪")
             name_display = name
